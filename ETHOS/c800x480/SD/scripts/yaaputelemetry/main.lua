@@ -116,6 +116,7 @@ local status = {
   -- configuration
   conf = {
     language = "en",
+    languageId = 1,
     defaultBattSourceId = 1, -- auto
     battery1Source = nil,
     battery2Source = nil,
@@ -687,7 +688,7 @@ local function createOnce(widget)
   status.currentModel = model.name()
   widget.runBgTasks = true
   libs.utils.playSound("yaapu")
-  libs.utils.pushMessage(7, "Yaapu Telemetry Widget 1.1.0".. " ("..'b2f1c6f'..")")
+  libs.utils.pushMessage(7, "Yaapu Telemetry Widget 1.3.0".. " ("..'fc8f523'..")")
   -- create the YaapuTimer if missing
   local timer = model.getTimer("Yaapu")
   if timer == nil then
@@ -991,7 +992,7 @@ local function bgtasks(widget)
         end
       end
     end
-  elseif status.pauseTelemetry == false then
+  elseif status.pauseTelemetry == false or CRSF_PAUSE_TELEMETRY == false or ELRS_PAUSE_TELEMETRY == false then
     for i=1,10
     do
       local physId, primId, appId, data = libs.utils.telemetryPop()
@@ -1272,7 +1273,10 @@ end
 local function configure(widget)
   local f
   local line = form.addLine("Widget version")
-  form.addStaticText(line, nil, "1.1.0".." ("..'b2f1c6f'..")")
+  form.addStaticText(line, nil, "1.3.0".." ("..'fc8f523'..")")
+
+  line = form.addLine("Sound Pack Language")
+  widget.soundPackLanguageField = form.addChoiceField(line, form.getFieldSlots(line)[0],  {{"English", 1}, {"Italian", 2}, {"German", 3}, {"French", 4} }, function() return status.conf.languageId end, function(value) status.conf.languageId = value end);
 
   line = form.addLine("GPS source")
   form.addSourceField(line, nil, function() return status.conf.gpsSource end, function(value) status.conf.gpsSource = value end)
@@ -1571,6 +1575,7 @@ local function applyConfig()
     libs.utils.telemetryPop = libs.utils.passthroughTelemetryPop
     libs.utils.setupTelemetrySource()
   end
+  status.conf.language = applyDefault(status.conf.languageId, 1, {"en","it","de","fr"})
 end
 --------------------------------------------------------------------
 -- configuration read/write
@@ -1625,6 +1630,7 @@ local function read(widget)
   status.conf.linkStatusSource3 = storageToConfig("linkStatusSource3", nil)
   status.conf.linkStatusSource4 = storageToConfig("linkStatusSource4", nil)
   status.conf.gpsSource = storageToConfig("gpsSource", nil)
+  status.conf.languageId = storageToConfig("language", nil)
   -- apply config
   applyConfig()
 end
@@ -1678,6 +1684,7 @@ local function write(widget)
   storage.write("linkStatusSource3", status.conf.linkStatusSource3)
   storage.write("linkStatusSource4", status.conf.linkStatusSource4)
   storage.write("gpsSource", status.conf.gpsSource)
+  storage.write("language", status.conf.languageId)
   -- apply config
   applyConfig()
 

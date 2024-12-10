@@ -17,25 +17,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program; if not, see <http://www.gnu.org/licenses>.
 --
---[[
- ALARM_TYPE_MIN needs arming (min has to be reached first), value below level for grace, once armed is periodic, reset on landing
- ALARM_TYPE_MAX no arming, value above level for grace, once armed is periodic, reset on landing
- ALARM_TYPE_TIMER no arming, fired periodically, spoken time, reset on landing
- ALARM_TYPE_BATT needs arming (min has to be reached first), value below level for grace, no reset on landing
-{
-  1 = notified,
-  2 = alarm start,
-  3 = armed,
-  4 = type(0=min,1=max,2=timer,3=batt),
-  5 = grace duration
-  6 = ready
-  7 = last alarm
-}
---]]
+
+-----------------------
+-- UNIT SCALING
+-----------------------
 local unitScale = getGeneralSettings().imperial == 0 and 1 or 3.28084
 local unitLabel = getGeneralSettings().imperial == 0 and "m" or "ft"
 local unitLongScale = getGeneralSettings().imperial == 0 and 1/1000 or 1/1609.34
 local unitLongLabel = getGeneralSettings().imperial == 0 and "km" or "mi"
+
 local function doGarbageCollect()
     collectgarbage()
     collectgarbage()
@@ -1355,7 +1345,7 @@ local bgclock = 0
 -------------------------------
 local function background()
   local now = getTime()
-   
+
   -- FAST: this runs at 60Hz (every 16ms)
   for i=1,7
   do
@@ -1404,6 +1394,15 @@ local function background()
   doGarbageCollect()
 end
 
+local function checkKeyEvent(event, keys)
+  for i=1,#keys do
+    if event == keys[i] then
+      return true
+    end
+  end
+  return false
+end
+
 local function run(event)
   lcd.clear()
 
@@ -1415,9 +1414,9 @@ local function run(event)
     ---------------------
     drawAllMessages()
 
-    if event == EVT_MINUS_BREAK or event == EVT_ROT_LEFT or event == 35 or event == EVT_EXIT_BREAK or event == 33 then
+    if checkKeyEvent(event, {EVT_MINUS_BREAK, EVT_ROT_LEFT, 35, EVT_EXIT_BREAK, 33}) then
       showMessages = false
-    elseif event == EVT_ENTER_BREAK or event == 34 then
+    elseif checkKeyEvent(event, {EVT_ENTER_BREAK, 34, EVT_VIRTUAL_ENTER}) then
       if showAltView == false then
         -- main --> altview
         unloadPanels()
@@ -1430,7 +1429,7 @@ local function run(event)
       end
       showMessages = false
       doGarbageCollect()
-    elseif event == EVT_PLUS_BREAK or event == EVT_ROT_RIGHT or event == 36 then
+    elseif checkKeyEvent(event, {EVT_PLUS_BREAK, EVT_ROT_RIGHT, 36}) then
       showMessages = false
     end
   elseif showConfigMenu then
@@ -1467,11 +1466,11 @@ local function run(event)
     ---------------------
     -- MAIN VIEW
     ---------------------
-    if event == EVT_MENU_BREAK or event == 32 then
+    if checkKeyEvent(event, {EVT_MENU_BREAK, EVT_VIRTUAL_MENU}) then
       status.showMinMaxValues = not status.showMinMaxValues
     end
 
-    if status.showDualBattery == true and (event == EVT_EXIT_BREAK or event == 33) then
+    if status.showDualBattery == true and (checkKeyEvent(event, {EVT_EXIT_BREAK,33})) then
       status.showDualBattery = false
     end
 
@@ -1495,14 +1494,14 @@ local function run(event)
         altView.drawView(drawLib,conf,telemetry,status,battery,(batt2sources.fc or batt2sources.vs) and 0 or 1,getMaxValue,gpsStatuses)
       end
 
-      if event == EVT_EXIT_BREAK or event == 33 then
+      if checkKeyEvent(event, {EVT_EXIT_BREAK, 33}) then
         showMessages = false
         showAltView = false
 
         clearTable(altView)
         altView = nil
         doGarbageCollect()
-      elseif event == EVT_PLUS_BREAK or event == EVT_ROT_RIGHT or event == 36 then
+      elseif checkKeyEvent(event, {EVT_PLUS_BREAK, EVT_ROT_RIGHT, 36}) then
         showMessages = true
       end
     else
@@ -1548,12 +1547,12 @@ local function run(event)
     end
 
     -- event handler
-    if event == EVT_PLUS_BREAK or event == EVT_ROT_RIGHT or event == 36 then
+    if checkKeyEvent(event, {EVT_PLUS_BREAK, EVT_ROT_RIGHT, 36, EVT_VIRTUAL_NEXT}) then
       ---------------------
       -- SHOW MESSAGES
       ---------------------
       showMessages = true
-    elseif event == EVT_MENU_LONG or event == 128 then
+    elseif checkKeyEvent(event, {EVT_MENU_LONG, 128, EVT_VIRTUAL_MENU_LONG}) then
       ---------------------
       -- SHOW CONFIG MENU
       ---------------------
@@ -1593,7 +1592,7 @@ local function init()
   clearTable(menuLib)
   menuLib = nil
 
-  pushMessage(7,"Yaapu 2.0.0-dev".." ("..'ae68d48'..")")
+  pushMessage(7,"Yaapu 2.1.0-dev".." ("..'6cf4cbc'..")")
   doGarbageCollect()
   playSound("yaapu")
 end
